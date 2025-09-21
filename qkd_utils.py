@@ -1,5 +1,5 @@
-# qkd_utils.py
 import json, hashlib, base64
+import random
 
 def send_json(sock, obj):
     """Send a JSON object followed by a newline (simple framing)."""
@@ -17,7 +17,6 @@ def recv_json(sock):
         buffer += chunk
         if b"\n" in buffer:
             line, rest = buffer.split(b"\n", 1)
-            # note: rest is discarded (we assume one message at a time)
             return json.loads(line.decode())
     if buffer:
         return json.loads(buffer.decode())
@@ -28,3 +27,12 @@ def derive_fernet_key_from_bits(bits_list):
     s = "".join(bits_list)
     digest = hashlib.sha256(s.encode()).digest()  # 32 bytes
     return base64.urlsafe_b64encode(digest)  # Fernet expects 32 url-safe base64 bytes
+
+def select_test_indices(sifted_key, fraction=0.5):
+    """
+    Select random indices from sifted key for eavesdropping check.
+    fraction: portion of bits to test (0 < fraction <= 1)
+    """
+    n = len(sifted_key)
+    test_size = max(1, int(n * fraction))
+    return random.sample(range(n), test_size)
